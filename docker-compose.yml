@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: fastapi-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: fastapi_db
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - fastapi-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fastapi-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DOCUMENTDB_CONNECTION_STRING=mongodb://admin:password@mongodb:27017/fastapi_db?authSource=admin
+      - DOCUMENTDB_DATABASE_NAME=fastapi_db
+      - BACKEND_CORS_ORIGINS=http://localhost:3000
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend:/app
+    networks:
+      - fastapi-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fastapi-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - fastapi-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  fastapi-network:
+    driver: bridge
