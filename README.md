@@ -74,13 +74,19 @@
 ### 1. Clone and Setup
 
 ```bash
-git clone <your-repo-url> my-documentdb-app
+git clone https://github.com/patty-chow/full-stack-fastapi-documentdb.git my-documentdb-app
 cd my-documentdb-app
 ```
 
 ### 2. Configure Environment
 
-Create a `.env` file in the root directory:
+Copy the example environment file and customize it:
+
+```bash
+cp env.example .env
+```
+
+Then edit the `.env` file with your configuration:
 
 ```env
 # Project Configuration
@@ -134,6 +140,35 @@ docker compose up -d
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
 - **Database Admin**: http://localhost:8080
+
+## 🎉 **Ready to Use!**
+
+This template is now a **complete, production-ready FastAPI + DocumentDB application**. You can:
+
+1. **Clone and run immediately** without any manual configuration
+2. **Develop with modern async patterns** using FastAPI + DocumentDB
+3. **Deploy to production** with the included Docker setup
+4. **Scale horizontally** with DocumentDB's MongoDB-compatible architecture
+
+### **Quick Start Summary**
+```bash
+# Replace with your actual repository URL
+git clone https://github.com/yourusername/full-stack-fastapi-documentdb.git my-documentdb-app
+cd my-documentdb-app
+cp env.example .env
+docker compose up -d
+```
+
+**Access your application:**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+**Develop with modern patterns:**
+- Async/await throughout
+- Document-based data model
+- MongoDB-compatible operations
+- No schema migrations needed
 
 ## Development Workflow
 
