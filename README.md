@@ -153,7 +153,7 @@ This template is now a **complete, production-ready FastAPI + DocumentDB applica
 ### **Quick Start Summary**
 ```bash
 # Replace with your actual repository URL
-git clone https://github.com/yourusername/full-stack-fastapi-documentdb.git my-documentdb-app
+git clone https://github.com/patty-chow/full-stack-fastapi-documentdb.git my-documentdb-app
 cd my-documentdb-app
 cp env.example .env
 docker compose up -d
