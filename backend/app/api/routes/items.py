@@ -1,52 +1,43 @@
-import uuid
 from typing import Any
+from bson import ObjectId
 
 from fastapi import APIRouter, HTTPException
-from sqlmodel import func, select
 
-from app.api.deps import CurrentUser, SessionDep
+from app import crud
+from app.api.deps import CurrentUser
 from app.models import Item, ItemCreate, ItemPublic, ItemsPublic, ItemUpdate, Message
 
 router = APIRouter(prefix="/items", tags=["items"])
 
 
 @router.get("/", response_model=ItemsPublic)
-def read_items(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+async def read_items(
+    current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
     Retrieve items.
     """
-
     if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(Item)
-        count = session.exec(count_statement).one()
-        statement = select(Item).offset(skip).limit(limit)
-        items = session.exec(statement).all()
+        items = await crud.get_items(skip=skip, limit=limit)
+        count = await Item.count()
     else:
-        count_statement = (
-            select(func.count())
-            .select_from(Item)
-            .where(Item.owner_id == current_user.id)
-        )
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Item)
-            .where(Item.owner_id == current_user.id)
-            .offset(skip)
-            .limit(limit)
-        )
-        items = session.exec(statement).all()
+        items = await crud.get_items_by_owner(owner_id=current_user.id, skip=skip, limit=limit)
+        count = await Item.find(Item.owner_id == current_user.id).count()
 
     return ItemsPublic(data=items, count=count)
 
 
 @router.get("/{id}", response_model=ItemPublic)
-def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+async def read_item(current_user: CurrentUser, id: str) -> Any:
     """
     Get item by ID.
     """
-    item = session.get(Item, id)
+    try:
+        item_id = ObjectId(id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid item ID format")
+    
+    item = await crud.get_item(item_id=item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     if not current_user.is_superuser and (item.owner_id != current_user.id):
@@ -55,55 +46,58 @@ def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
 
 
 @router.post("/", response_model=ItemPublic)
-def create_item(
-    *, session: SessionDep, current_user: CurrentUser, item_in: ItemCreate
+async def create_item(
+    *, current_user: CurrentUser, item_in: ItemCreate
 ) -> Any:
     """
     Create new item.
     """
-    item = Item.model_validate(item_in, update={"owner_id": current_user.id})
-    session.add(item)
-    session.commit()
-    session.refresh(item)
+    item = await crud.create_item(item_in=item_in, owner_id=current_user.id)
     return item
 
 
 @router.put("/{id}", response_model=ItemPublic)
-def update_item(
+async def update_item(
     *,
-    session: SessionDep,
     current_user: CurrentUser,
-    id: uuid.UUID,
+    id: str,
     item_in: ItemUpdate,
 ) -> Any:
     """
     Update an item.
     """
-    item = session.get(Item, id)
+    try:
+        item_id = ObjectId(id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid item ID format")
+    
+    item = await crud.get_item(item_id=item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     if not current_user.is_superuser and (item.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    update_dict = item_in.model_dump(exclude_unset=True)
-    item.sqlmodel_update(update_dict)
-    session.add(item)
-    session.commit()
-    session.refresh(item)
+    
+    item = await crud.update_item(item_id=item_id, item_in=item_in)
     return item
 
 
 @router.delete("/{id}")
-def delete_item(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+async def delete_item(
+    current_user: CurrentUser, id: str
 ) -> Message:
     """
     Delete an item.
     """
-    item = session.get(Item, id)
+    try:
+        item_id = ObjectId(id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid item ID format")
+    
+    item = await crud.get_item(item_id=item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     if not current_user.is_superuser and (item.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    session.delete(item)
-    session.commit()
+    
+    await crud.delete_item(item_id=item_id)
     return Message(message="Item deleted successfully")

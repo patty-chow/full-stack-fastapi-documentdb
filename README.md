@@ -216,10 +216,9 @@ await user.save()
 Instead of tables and rows, DocumentDB uses collections and documents:
 
 ```python
-# SQL Model (old)
-class User(SQLModel, table=True):
-    id: int = Field(primary_key=True)
-    email: str = Field(unique=True)
+# Beanie Document (current)
+class User(Document):
+    email: Indexed(EmailStr, unique=True)
     name: str
 
 # Document Model (new)

@@ -1,11 +1,10 @@
 from fastapi.testclient import TestClient
-from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.models import User
 
 
-def test_create_user(client: TestClient, db: Session) -> None:
+async def test_create_user(client: TestClient) -> None:
     r = client.post(
         f"{settings.API_V1_STR}/private/users/",
         json={
@@ -19,7 +18,9 @@ def test_create_user(client: TestClient, db: Session) -> None:
 
     data = r.json()
 
-    user = db.exec(select(User).where(User.id == data["id"])).first()
+    # Get user from database using Beanie
+    from bson import ObjectId
+    user = await User.get(ObjectId(data["id"]))
 
     assert user
     assert user.email == "pollo@listo.com"

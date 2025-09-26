@@ -1,10 +1,10 @@
 import logging
+import asyncio
 
-from sqlalchemy import Engine
-from sqlmodel import Session, select
+from motor.motor_asyncio import AsyncIOMotorClient
 from tenacity import after_log, before_log, retry, stop_after_attempt, wait_fixed
 
-from app.core.db import engine
+from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,11 +19,12 @@ wait_seconds = 1
     before=before_log(logger, logging.INFO),
     after=after_log(logger, logging.WARN),
 )
-def init(db_engine: Engine) -> None:
+async def init() -> None:
     try:
-        # Try to create session to check if DB is awake
-        with Session(db_engine) as session:
-            session.exec(select(1))
+        client = AsyncIOMotorClient(settings.MONGODB_URL)
+        # Try to ping the database to check if it's awake
+        await client.admin.command('ping')
+        client.close()
     except Exception as e:
         logger.error(e)
         raise e
@@ -31,7 +32,7 @@ def init(db_engine: Engine) -> None:
 
 def main() -> None:
     logger.info("Initializing service")
-    init(engine)
+    asyncio.run(init())
     logger.info("Service finished initializing")
 
 

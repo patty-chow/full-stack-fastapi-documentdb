@@ -45,10 +45,10 @@ services:
       - traefik-public
       - default
 
-  db:
+  documentdb:
     restart: "no"
     ports:
-      - "5432:5432"
+      - "10260:10260"
 
   adminer:
     restart: "no"

@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
-from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.security import verify_password
@@ -72,7 +71,7 @@ def test_recovery_password_user_not_exits(
     assert r.status_code == 404
 
 
-def test_reset_password(client: TestClient, db: Session) -> None:
+async def test_reset_password(client: TestClient) -> None:
     email = random_email()
     password = random_lower_string()
     new_password = random_lower_string()
@@ -84,9 +83,9 @@ def test_reset_password(client: TestClient, db: Session) -> None:
         is_active=True,
         is_superuser=False,
     )
-    user = create_user(session=db, user_create=user_create)
+    user = await create_user(user_create=user_create)
     token = generate_password_reset_token(email=email)
-    headers = user_authentication_headers(client=client, email=email, password=password)
+    headers = await user_authentication_headers(client=client, email=email)
     data = {"new_password": new_password, "token": token}
 
     r = client.post(
@@ -98,8 +97,10 @@ def test_reset_password(client: TestClient, db: Session) -> None:
     assert r.status_code == 200
     assert r.json() == {"message": "Password updated successfully"}
 
-    db.refresh(user)
-    assert verify_password(new_password, user.hashed_password)
+    # Refresh user from database to get updated password
+    from app import crud
+    updated_user = await crud.get_user_by_id(user_id=user.id)
+    assert verify_password(new_password, updated_user.hashed_password)
 
 
 def test_reset_password_invalid_token(

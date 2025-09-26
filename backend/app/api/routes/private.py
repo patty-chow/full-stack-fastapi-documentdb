@@ -3,11 +3,12 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.api.deps import SessionDep
+from app import crud
 from app.core.security import get_password_hash
 from app.models import (
     User,
     UserPublic,
+    UserCreate,
 )
 
 router = APIRouter(tags=["private"], prefix="/private")
@@ -21,18 +22,15 @@ class PrivateUserCreate(BaseModel):
 
 
 @router.post("/users/", response_model=UserPublic)
-def create_user(user_in: PrivateUserCreate, session: SessionDep) -> Any:
+async def create_user(user_in: PrivateUserCreate) -> Any:
     """
     Create a new user.
     """
-
-    user = User(
+    user_create = UserCreate(
         email=user_in.email,
+        password=user_in.password,
         full_name=user_in.full_name,
-        hashed_password=get_password_hash(user_in.password),
     )
-
-    session.add(user)
-    session.commit()
-
+    
+    user = await crud.create_user(user_create=user_create)
     return user

@@ -27,7 +27,7 @@ $ source .venv/bin/activate
 
 Make sure your editor is using the correct Python virtual environment, with the interpreter at `backend/.venv/bin/python`.
 
-Modify or add SQLModel models for data and SQL tables in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/crud.py`.
+Modify or add Beanie models for data and MongoDB collections in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/crud.py`.
 
 ## VS Code
 
@@ -121,47 +121,29 @@ docker compose exec backend bash scripts/tests-start.sh -x
 
 When the tests are run, a file `htmlcov/index.html` is generated, you can open it in your browser to see the coverage of the tests.
 
-## Migrations
+## Database Schema Management
 
-As during local development your app directory is mounted as a volume inside the container, you can also run the migrations with `alembic` commands inside the container and the migration code will be in your app directory (instead of being only inside the container). So you can add it to your git repository.
+This project uses **DocumentDB (MongoDB)** with **Beanie** as the ODM (Object Document Mapper). Unlike traditional SQL databases, MongoDB is schema-less, which means:
 
-Make sure you create a "revision" of your models and that you "upgrade" your database with that revision every time you change them. As this is what will update the tables in your database. Otherwise, your application will have errors.
+* **No migrations needed** - Beanie automatically handles schema changes
+* **Automatic collection creation** - Collections are created automatically when the application starts
+* **Flexible schema evolution** - You can add new fields to your models without breaking existing data
 
-* Start an interactive session in the backend container:
+### Working with Models
 
-```console
-$ docker compose exec backend bash
-```
+* Your Document models are defined in `./backend/app/models.py`
+* Beanie is configured to use these models automatically
+* When you modify a model, simply restart the application - no migration commands needed
 
-* Alembic is already configured to import your SQLModel models from `./backend/app/models.py`.
+### Model Changes
 
-* After changing a model (for example, adding a column), inside the container, create a revision, e.g.:
+To modify your database schema:
 
-```console
-$ alembic revision --autogenerate -m "Add column last_name to User model"
-```
+1. Edit your models in `./backend/app/models.py`
+2. Restart the application
+3. Beanie will automatically handle the schema changes
 
-* Commit to the git repository the files generated in the alembic directory.
-
-* After creating the revision, run the migration in the database (this is what will actually change the database):
-
-```console
-$ alembic upgrade head
-```
-
-If you don't want to use migrations at all, uncomment the lines in the file at `./backend/app/core/db.py` that end in:
-
-```python
-SQLModel.metadata.create_all(engine)
-```
-
-and comment the line in the file `scripts/prestart.sh` that contains:
-
-```console
-$ alembic upgrade head
-```
-
-If you don't want to start with the default models and want to remove them / modify them, from the beginning, without having any previous revision, you can remove the revision files (`.py` Python files) under `./backend/app/alembic/versions/`. And then create a first migration as described above.
+The application will create the necessary MongoDB collections and indexes automatically when it starts.
 
 ## Email Templates
 
