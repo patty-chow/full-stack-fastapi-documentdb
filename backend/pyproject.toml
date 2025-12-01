@@ -15,7 +15,7 @@ dependencies = [
     "httpx<1.0.0,>=0.25.1",
     # DocumentDB/MongoDB dependencies
     "motor<4.0.0,>=3.3.2",  # Async MongoDB driver
-    "beanie<2.0.0,>=1.23.6",  # ODM for MongoDB
+    "beanie>=1.23.6,<3.0.0",  # ODM for MongoDB
     "pymongo<5.0.0,>=4.6.0",  # MongoDB driver
     # Pin bcrypt until passlib supports the latest
     "bcrypt==4.3.0",
